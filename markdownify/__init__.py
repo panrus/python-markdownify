@@ -119,6 +119,41 @@ class MarkdownConverter(object):
     def indent(self, text, level):
         return line_beginning_re.sub('\t' * level, text) if text else ''
 
+    def convert_table(self, el, text, convert_as_inline):
+        table = ''
+        for idx, tr in enumerate(el.find_all('tr')):
+            if idx != 0:
+                tds = tr.find_all('td')
+                row_str = "|"
+                for td in tds:
+                    td_content_list = []
+                    for content in td.contents:
+                        # Cast to string
+                        str2 = str(content)
+                        str3 = str2.replace("<code>", "```").replace("</code>", "```")
+                        td_content_list.append(str3)
+                    td_content_str = ''.join(td_content_list)
+                    row_str = row_str + " " + td_content_str + " |"
+                table = table + (row_str + "\n")
+            else:
+                # Table header
+                ths = tr.find_all('th')
+
+                row_str = "|"
+                row_str2 = "|"
+                for th in ths:
+                    try:
+                        col = int(th["colspan"])
+                    except (ValueError, KeyError) as e:
+                        col = 0
+
+                    row_str = row_str + " " + th.text + ("|" * col)
+                    row_str2 = row_str2 + (":- |" * col)
+                table = table + (row_str + "\n")
+                table = table + (row_str2 + "\n")
+
+        return '\n' + table
+    
     def underline(self, text, pad_char):
         text = (text or '').rstrip()
         return '%s\n%s\n\n' % (text, pad_char * len(text)) if text else ''
